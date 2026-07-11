@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spordipäevakute Haldussüsteem v2</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1e3a8a;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --warning: #f59e0b;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        nav button {
+            background: #e2e8f0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        nav button.active {
+            background: var(--primary);
+            color: white;
+        }
+        .page {
+            display: none;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .page.active {
+            display: block;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media(min-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr 2fr; }
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button.btn-submit {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        th:hover {
+            background-color: #e2e8f0;
+        }
+        .sub-nav {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .sub-nav button {
+            background: #f1f5f9;
+            font-size: 0.9rem;
+        }
+        .sub-nav button.active {
+            background: #475569;
+            color: white;
+        }
+        .config-box {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .btn-action {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+        .btn-edit { background: var(--warning); color: white; }
+        .btn-del { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏆 Spordipäevakute Haldussüsteem</h1>
+    
+    <nav>
+        <button onclick="showPage('registreerimine')" id="nav-registreerimine" class="active">Registreerimine</button>
+        <button onclick="showPage('tulemused')" id="nav-tulemused">Tulemuste Sisestamine</button>
+        <button onclick="showPage('kokkuvote')" id="nav-kokkuvote">Kokkuvõte & Edetabelid</button>
+        <button onclick="kustutaAndmed()" style="background:#ef4444; color:white; margin-left:auto;">Nulli andmed</button>
+    </nav>
+
+    <div id="page-registreerimine" class="page active">
+        <div class="grid-2">
+            <div>
+                <h2 id="formTitle">Uus võistleja</h2>
+                <form id="regForm" onsubmit="lisaVõiMuudaVoistleja(event)">
+                    <input type="hidden" id="regId">
+                    <label>Nimi:</label>
+                    <input type="text" id="regNimi" required>
+                    
+                    <label>Võistkonna nimi:</label>
+                    <input type="text" id="regVoistkond" required>
+                    
+                    <label>Sünniaasta:</label>
+                    <input type="number" id="regAasta" min="1920" max="2026" required>
+                    
+                    <button type="submit" id="submitBtn" class="btn-submit">Lisa võistleja</button>
+                    <button type="button" id="cancelBtn" onclick="tühistaMuutmine()" style="display:none; margin-top:5px; background:#94a3b8; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;">Tühista</button>
+                </form>
+            </div>
+            <div>
+                <h2>Võistlejate nimekiri</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Jrk</th>
+                            <th>Nimi</th>
+                            <th>Võistkond</th>
+                            <th>Sünniaasta</th>
+                            <th>Kategooria</th>
+                            <th>Tegevused</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voistlejadTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-tulemused" class="page">
+        <h2>Tulemuste sisestamine alade kaupa</h2>
+        
+        <div class="sub-nav" id="alaNavi"></div>
+
+        <div id="alaSisestusKoht">
+            <h3 id="alaPealkiri">Vali ala</h3>
+            <div id="alaKonfig" class="config-box" style="display:none;"></div>
+            
+            <table id="alaTabel">
+                <thead>
+                    <tr id="alaTabeliPäis"></tr>
+                </thead>
+                <tbody id="alaTabeliSisu"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="page-kokkuvote" class="page">
+        <h2>Võistluse kokkuvõtted</h2>
+        
+        <h3>Individuaalne edetabel (kliki päisel sorteerimiseks)</h3>
+        <table id="koondTabel">
+            <thead>
+                <tr>
+                    <th onclick="sorteeriTabel('koondTabel', 0, true)">Koht</th>
+                    <th onclick="sorteeriTabel('koondTabel', 1, true)">Jrk</th>
+                    <th onclick="sorteeriTabel('koondTabel', 2)">Nimi</th>
+                    <th onclick="sorteeriTabel('koondTabel', 3)">Võistkond</th>
+                    <th onclick="sorteeriTabel('koondTabel', 4)">Kat.</th>
+                    <th onclick="sorteeriTabel('koondTabel', 5, true)">I Etapp</th>
+                    <th onclick="sorteeriTabel('koondTabel', 6, true)">II Etapp</th>
+                    <th onclick="sorteeriTabel('koondTabel', 7, true)">III Etapp</th>
+                    <th onclick="sorteeriTabel('koondTabel', 8, true)">Finaal</th>
+                    <th onclick="sorteeriTabel('koondTabel', 9, true)">KOKKU</th>
+                </tr>
+            </thead>
+            <tbody id="koondTabelSisu"></tbody>
+        </table>
+
+        <h3>Võistkondlik edetabel</h3>
+        <table id="voistkondTabel">
+            <thead>
+                <tr>
+                    <th onclick="sorteeriTabel('voistkondTabel', 0, true)">Koht</th>
+                    <th onclick="sorteeriTabel('voistkondTabel', 1)">Võistkond</th>
+                    <th onclick="sorteeriTabel('voistkondTabel', 2, true)">Kokku Punkte</th>
+                </tr>
+            </thead>
+            <tbody id="voistkondTabelSisu"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Andmete algseis brauseri mälust
+    let voistlejad = JSON.parse(localStorage.getItem('spordi_voistlejad_v2')) || [];
+    let tulemused = JSON.parse(localStorage.getItem('spordi_tulemused_v2')) || {}; 
+    let jooksudeLimitid = JSON.parse(localStorage.getItem('spordi_limitid_v2')) || { '60m': 20, '600m': 180, 'klotsijooks': 30 };
+
+    // Sorteerimise olekute meelespidamiseks
+    let sorteerimiseSuunad = {};
+
+    const alad = {
+        '60m': { etapp: 'I Etapp', tyyp: 'jooks', katsed: 1, info: 'Aeg sekundites' },
+        'kaugushupe': { etapp: 'I Etapp', tyyp: 'maxParim', katsed: 2, info: 'Parim katse (cm/m)' },
+        'ohkpuss': { etapp: 'I Etapp', tyyp: 'single', katsed: 1, info: '8 lasku kokku' },
+        'discgolf': { etapp: 'II etapp', tyyp: 'single', katsed: 1, info: '10 viset' },
+        'penaltid': { etapp: 'II etapp', tyyp: 'single', katsed: 1, info: '5 lööki' },
+        'noolevise': { etapp: 'II etapp', tyyp: 'single', katsed: 1, info: '5 viset' },
+        'kuul': { etapp: 'III etapp', tyyp: 'sum', katsed: 3, info: '3 katse summa' },
+        'vibulaskmine': { etapp: 'III etapp', tyyp: 'single', katsed: 1, info: '5 lasku' },
+        '600m': { etapp: 'III etapp', tyyp: 'jooks', katsed: 1, info: 'Aeg sekundites' },
+        'vabavisked': { etapp: 'Finaaletapp', tyyp: 'single', katsed: 1, info: 'Visete arv 1 min jooksul' },
+        'klotsijooks': { etapp: 'Finaaletapp', tyyp: 'jooks', katsed: 1, info: 'Aeg sekundites' },
+        'vortex': { etapp: 'Finaaletapp', tyyp: 'maxParim', katsed: 3, info: 'Parim katse' }
+    };
+
+    let aktiivneAla = '60m';
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.getElementById('nav-' + pageId).classList.add('active');
+        
+        if(pageId === 'tulemused') { uuendaAladNavi(); laeAlaSisestus(); }
+        if(pageId === 'kokkuvote') uuendaKokkuvotted();
+    }
+
+    function arvutaKategooria(aasta) {
+        const vanus = 2026 - aasta;
+        if (vanus <= 7) return 'U8';
+        if (vanus <= 15) return 'U16';
+        return '16+';
+    }
+
+    function lisaVõiMuudaVoistleja(e) {
+        e.preventDefault();
+        const id = document.getElementById('regId').value;
+        const nimi = document.getElementById('regNimi').value;
+        const voistkond = document.getElementById('regVoistkond').value;
+        const aasta = parseInt(document.getElementById('regAasta').value);
+        const kat = arvutaKategooria(aasta);
+
+        if(id) {
+            // Muutmine
+            const index = voistlejad.findIndex(v => v.id === id);
+            if(index !== -1) {
+                voistlejad[index].nimi = nimi;
+                voistlejad[index].voistkond = voistkond;
+                voistlejad[index].aasta = aasta;
+                voistlejad[index].kat = kat;
+            }
+            tühistaMuutmine();
+        } else {
+            // Uus lisamine
+            const uus = { id: Date.now().toString(), jrk: voistlejad.length + 1, nimi, voistkond, aasta, kat };
+            voistlejad.push(uus);
+        }
+        
+        salvestaMällu();
+        uuendaVoistlejadTable();
+    }
+
+    function alustaMuutmist(id) {
+        const v = voistlejad.find(voist => voist.id === id);
+        if(!v) return;
+        document.getElementById('regId').value = v.id;
+        document.getElementById('regNimi').value = v.nimi;
+        document.getElementById('regVoistkond').value = v.voistkond;
+        document.getElementById('regAasta').value = v.aasta;
+        
+        document.getElementById('formTitle').innerText = "Muuda võistlejat";
+        document.getElementById('submitBtn').innerText = "Salvesta muudatused";
+        document.getElementById('cancelBtn').style.display = "inline-block";
+    }
+
+    function tühistaMuutmine() {
+        document.getElementById('regForm').reset();
+        document.getElementById('regId').value = '';
+        document.getElementById('formTitle').innerText = "Uus võistleja";
+        document.getElementById('submitBtn').innerText = "Lisa võistleja";
+        document.getElementById('cancelBtn').style.display = "none";
+    }
+
+    function kustutaVoistleja(id) {
+        if(confirm("Kas soovid selle võistleja eemaldada?")) {
+            voistlejad = voistlejad.filter(v => v.id !== id);
+            // Uuendame Jrk numbreid, et nad oleksid järjepidevad
+            voistlejad.forEach((v, index) => v.jrk = index + 1);
+            salvestaMällu();
+            uuendaVoistlejadTable();
+        }
+    }
+
+    function uuendaVoistlejadTable() {
+        const tbody = document.getElementById('voistlejadTable');
+        tbody.innerHTML = '';
+        voistlejad.forEach(v => {
+            tbody.innerHTML += `<tr>
+                <td>${v.jrk}</td>
+                <td>${v.nimi}</td>
+                <td>${v.voistkond}</td>
+                <td>${v.aasta}</td>
+                <td><strong>${v.kat}</strong></td>
+                <td>
+                    <button class="btn-action btn-edit" onclick="alustaMuutmist('${v.id}')">Muuda</button>
+                    <button class="btn-action btn-del" onclick="kustutaVoistleja('${v.id}')">Kustuta</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function uuendaAladNavi() {
+        const navi = document.getElementById('alaNavi');
+        navi.innerHTML = '';
+        Object.keys(alad).forEach(alaKood => {
+            const btn = document.createElement('button');
+            btn.innerText = `${alad[alaKood].etapp}: ${alaKood}`;
+            if(alaKood === aktiivneAla) btn.className = 'active';
+            btn.onclick = () => { aktiivneAla = alaKood; uuendaAladNavi(); laeAlaSisestus(); };
+            navi.appendChild(btn);
+        });
+    }
+
+    function laeAlaSisestus() {
+        const ala = alad[aktiivneAla];
+        document.getElementById('alaPealkiri').innerText = `${ala.etapp} - ${aktiivneAla} (${ala.info})`;
+        
+        const konfig = document.getElementById('alaKonfig');
+        if(ala.tyyp === 'jooks') {
+            konfig.style.display = 'block';
+            konfig.innerHTML = `<label>Määra 50 punkti limiitaeg (sek): </label>
+                <input type="number" step="0.01" value="${jooksudeLimitid[aktiivneAla]}" onchange="muudaLimiti('${aktiivneAla}', this.value)">`;
+        } else {
+            konfig.style.display = 'none';
+        }
+
+        // Päise ehitus (lisatud klikitavad sorteerimised)
+        const pais = document.getElementById('alaTabeliPäis');
+        let paisHtml = `
+            <th onclick="sorteeriTabel('alaTabel', 0, true)">Jrk</th>
+            <th onclick="sorteeriTabel('alaTabel', 1)">Nimi</th>
+            <th onclick="sorteeriTabel('alaTabel', 2)">Kat.</th>`;
+        for(let i = 1; i <= ala.katsed; i++) {
+            paisHtml += `<th>Katse ${i}</th>`;
+        }
+        pais.innerHTML = paisHtml;
+
+        const sisu = document.getElementById('alaTabeliSisu');
+        sisu.innerHTML = '';
+        
+        if(voistlejad.length === 0) {
+            sisu.innerHTML = `<tr><td colspan="${3 + ala.katsed}">Lisa esmalt registreerimise lehelt võistlejaid!</td></tr>`;
+            return;
+        }
+
+        voistlejad.forEach(v => {
+            if(!tulemused[v.id]) tulemused[v.id] = {};
+            if(!tulemused[v.id][aktiivneAla]) tulemused[v.id][aktiivneAla] = Array(ala.katsed).fill('');
+
+            let ridaHtml = `<tr><td>${v.jrk}</td><td><strong>${v.nimi}</strong></td><td>${v.kat}</td>`;
+            for(let i = 0; i < ala.katsed; i++) {
+                const väärtus = tulemused[v.id][aktiivneAla][i];
+                ridaHtml += `<td><input type="number" step="0.01" value="${väärtus}" onchange="salvestaTulemus('${v.id}', '${aktiivneAla}', ${i}, this.value)"></td>`;
+            }
+            ridaHtml += `</tr>`;
+            sisu.innerHTML += ridaHtml;
+        });
+    }
+
+    function muudaLimiti(ala, väärtus) {
+        jooksudeLimitid[ala] = parseFloat(väärtus) || 0;
+        localStorage.setItem('spordi_limitid_v2', JSON.stringify(jooksudeLimitid));
+    }
+
+    function salvestaTulemus(voistlejaId, alaKood, katseIndex, väärtus) {
+        tulemused[voistlejaId][alaKood][katseIndex] = väärtus !== '' ? parseFloat(väärtus) : '';
+        localStorage.setItem('spordi_tulemused_v2', JSON.stringify(tulemused));
+    }
+
+    function arvutaLõppTulemus(alaKood, katsedMassiiv) {
+        const puhtadTulemused = katsedMassiiv.filter(x => x !== '' && x !== null && !isNaN(x));
+        if(puhtadTulemused.length === 0) return null;
+
+        const tyyp = alad[alaKood].tyyp;
+        if(tyyp === 'single' || tyyp === 'jooks') return puhtadTulemused[0];
+        if(tyyp === 'maxParim') return Math.max(...puhtadTulemused);
+        if(tyyp === 'sum') return puhtadTulemused.reduce((a, b) => a + b, 0);
+        return null;
+    }
+
+    // KATEGOORIAPÕHINE PUNKTIVÕTT
+    function arvutaPunktidKõigile() {
+        let punktid = {}; // { voistlejaId: { alaKood: punktid } }
+        voistlejad.forEach(v => { punktid[v.id] = {}; });
+
+        const kategooriad = ['U8', 'U16', '16+'];
+
+        Object.keys(alad).forEach(alaKood => {
+            const ala = alad[alaKood];
+
+            // Arvutame punktid iga kategooria sees täiesti eraldi
+            kategooriad.forEach(kat => {
+                let kategooriaTulemused = [];
+                
+                voistlejad.filter(v => v.kat === kat).forEach(v => {
+                    const katsed = tulemused[v.id]?.[alaKood] || [];
+                    const loppTulemus = arvutaLõppTulemus(alaKood, katsed);
+                    if(loppTulemus !== null) {
+                        kategooriaTulemused.push({ id: v.id, tulemus: loppTulemus });
+                    }
+                });
+
+                if(kategooriaTulemused.length === 0) return;
+
+                if(ala.tyyp === 'jooks') {
+                    const limit = jooksudeLimitid[alaKood] || 20;
+                    const parimAeg = Math.min(...kategooriaTulemused.map(x => x.tulemus));
+                    
+                    kategooriaTulemused.forEach(x => {
+                        if (x.tulemus >= limit) {
+                            punktid[x.id][alaKood] = 50;
+                        } else {
+                            let p = 100 - ((x.tulemus - parimAeg) / (limit - parimAeg)) * 50;
+                            punktid[x.id][alaKood] = Math.max(50, Math.min(100, p));
+                        }
+                    });
+                } else {
+                    // Tavalised alad (parim tulemus kategoorias saab 100p, 0 tulemus annab 50p)
+                    const parimTulemus = Math.max(...kategooriaTulemused.map(x => x.tulemus));
+                    
+                    kategooriaTulemused.forEach(x => {
+                        if(parimTulemus === 0) {
+                            punktid[x.id][alaKood] = 100;
+                        } else {
+                            let p = 50 + (x.tulemus / parimTulemus) * 50;
+                            punktid[x.id][alaKood] = Math.max(50, Math.min(100, p));
+                        }
+                    });
+                }
+            });
+        });
+
+        return punktid;
+    }
+
+    function uuendaKokkuvotted() {
+        const punktid = arvutaPunktidKõigile();
+        
+        let voistlejaKoond = voistlejad.map(v => {
+            let etapiSummad = { 'I Etapp': 0, 'II etapp': 0, 'III etapp': 0, 'Finaaletapp': 0 };
+            let kokku = 0;
+
+            Object.keys(alad).forEach(alaKood => {
+                const p = punktid[v.id]?.[alaKood] || 0;
+                etapiSummad[alad[alaKood].etapp] += p;
+                kokku += p;
+            });
+
+            return { ...v, etapiSummad, kokku };
+        });
+
+        // Vaikimisi sorteerime punktide järgi kahanevalt
+        voistlejaKoond.sort((a, b) => b.kokku - a.kokku);
+
+        const koondSisu = document.getElementById('koondTabelSisu');
+        koondSisu.innerHTML = '';
+        voistlejaKoond.forEach((v, index) => {
+            koondSisu.innerHTML += `<tr>
+                <td>${index + 1}</td>
+                <td>${v.jrk}</td>
+                <td><strong>${v.nimi}</strong></td>
+                <td>${v.voistkond}</td>
+                <td>${v.kat}</td>
+                <td>${v.etapiSummad['I Etapp'].toFixed(1)}</td>
+                <td>${v.etapiSummad['II etapp'].toFixed(1)}</td>
+                <td>${v.etapiSummad['III etapp'].toFixed(1)}</td>
+                <td>${v.etapiSummad['Finaaletapp'].toFixed(1)}</td>
+                <td><strong>${v.kokku.toFixed(1)}</strong></td>
+            </tr>`;
+        });
+
+        // Võistkondlik edetabel
+        let voistkonnad = {};
+        voistlejaKoond.forEach(v => {
+            if(!voistkonnad[v.voistkond]) voistkonnad[v.voistkond] = 0;
+            voistkonnad[v.voistkond] += v.kokku;
+        });
+
+        let voistkondEdetabel = Object.keys(voistkonnad).map(nimi => {
+            return { nimi, punkte: voistkonnad[nimi] };
+        }).sort((a,b) => b.punkte - a.punkte);
+
+        const vSisu = document.getElementById('voistkondTabelSisu');
+        vSisu.innerHTML = '';
+        voistkondEdetabel.forEach((vk, index) => {
+            vSisu.innerHTML += `<tr>
+                <td>${index + 1}</td>
+                <td><strong>${vk.nimi}</strong></td>
+                <td>${vk.punkte.toFixed(1)}</td>
+            </tr>`;
+        });
+    }
+
+    // TABELITE SORTEERIMISE ALGORITM
+    function sorteeriTabel(tabeliId, tulbaIndeks, kasNumber = false) {
+        const tabel = document.getElementById(tabeliId);
+        const tbody = tabel.querySelector('tbody');
+        const read = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Vahetame sorteerimissuunda (tõusev / laskuv)
+        if (!sorteerimiseSuunad[tabeliId]) sorteerimiseSuunad[tabeliId] = {};
+        const oliLaskuv = sorteerimiseSuunad[tabeliId][tulbaIndeks] === 'kahanev';
+        const suund = oliLaskuv ? 'kasvav' : 'kahanev';
+        sorteerimiseSuunad[tabeliId] = { [tulbaIndeks]: suund }; // nullib teised, hoiab aktiivset
+
+        read.sort((a, b) => {
+            let lahtriA = a.children[tulbaIndeks].innerText.trim();
+            let lahtriB = b.children[tulbaIndeks].innerText.trim();
+
+            if (kasNumber) {
+                let arvA = parseFloat(lahtriA) || 0;
+                let arvB = parseFloat(lahtriB) || 0;
+                return suund === 'kasvav' ? arvA - arvB : arvB - arvA;
+            } else {
+                return suund === 'kasvav' ? lahtriA.localeCompare(lahtriB) : lahtriB.localeCompare(lahtriA);
+            }
+        });
+
+        // Paneme read uues järjekorras tabelisse tagasi
+        read.forEach(rida => tbody.appendChild(rida));
+    }
+
+    function salvestaMällu() {
+        localStorage.setItem('spordi_voistlejad_v2', JSON.stringify(voistlejad));
+        localStorage.setItem('spordi_tulemused_v2', JSON.stringify(tulemused));
+    }
+
+    function kustutaAndmed() {
+        if(confirm("Kas oled kindel, et soovid KÕIK andmed kustutada?")) {
+            localStorage.clear();
+            voistlejad = [];
+            tulemused = {};
+            jooksudeLimitid = { '60m': 20, '600m': 180, 'klotsijooks': 30 };
+            tühistaMuutmine();
+            uuendaVoistlejadTable();
+            alert("Andmed edukalt nullitud!");
+        }
+    }
+
+    // Lehe esmakordne käivitus
+    uuendaVoistlejadTable();
+</script>
+
+</body>
+</html>
