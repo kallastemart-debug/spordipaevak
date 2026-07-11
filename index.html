@@ -35,6 +35,7 @@
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            align-items: center;
         }
         nav button {
             background: #e2e8f0;
@@ -47,6 +48,12 @@
         nav button.active {
             background: var(--primary);
             color: white;
+        }
+        .nav-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            flex-wrap: wrap;
         }
         .page {
             display: none;
@@ -141,9 +148,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ⚠️ SISESTA SIIN OMA FIREBASE CONFIG SAMMUST 2!
+        // ⚠️ ASENDA SEE OMA FIREBASE CONFIGURATSIOONIGA!
         const firebaseConfig = {
-		apiKey: "AIzaSyBcWNborBy2zrV-h4pI1Qco2_5F6XWnGDw",
+            	apiKey: "AIzaSyBcWNborBy2zrV-h4pI1Qco2_5F6XWnGDw",
   		authDomain: "spordipaevak.firebaseapp.com",
   		databaseURL: "https://spordipaevak-default-rtdb.europe-west1.firebasedatabase.app",
   		projectId: "spordipaevak",
@@ -151,6 +158,7 @@
   		messagingSenderId: "490772861377",
   		appId: "1:490772861377:web:023fd162197a1a65509f40",
   		measurementId: "G-XNLLJ4CB9N"
+
         };
 
         // Algatame Firebase
@@ -161,11 +169,11 @@
         window.voistlejad = [];
         window.tulemused = {};
         window.jooksudeLimitid = { '60m': 20, '600m': 180, 'klotsijooks': 30 };
-        window.db = db; // teeme kättesaadavaks teistele funktsioonidele
+        window.db = db;
         window.ref = ref;
         window.set = set;
 
-        // KUULAME MUUDATUSI PILVES: Niipea kui keegi kuskil midagi muudab, uueneb see kõigil ekraanidel
+        // Kuulame pilve muudatusi
         onValue(ref(db, 'spordipaev'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -176,7 +184,6 @@
                 window.voistlejad = [];
                 window.tulemused = {};
             }
-            // Uuendame kasutajaliidest uute andmetega
             uuendaVoistlejadTable();
             if(document.getElementById('page-tulemused').classList.contains('active')) laeAlaSisestus();
             if(document.getElementById('page-kokkuvote').classList.contains('active')) uuendaKokkuvotted();
@@ -192,7 +199,13 @@
         <button onclick="showPage('registreerimine')" id="nav-registreerimine" class="active">Registreerimine</button>
         <button onclick="showPage('tulemused')" id="nav-tulemused">Tulemuste Sisestamine</button>
         <button onclick="showPage('kokkuvote')" id="nav-kokkuvote">Kokkuvõte & Edetabelid</button>
-        <button onclick="kustutaAndmed()" style="background:#ef4444; color:white; margin-left:auto;">Nulli pilve andmed</button>
+        
+        <div class="nav-actions">
+            <button onclick="laadiAndmedAlla()" style="background:#0284c7; color:white;">💾 Varukoopia</button>
+            <button onclick="document.getElementById('failiSisend').click()" style="background:#4f46e5; color:white;">📂 Taasta failist</button>
+            <input type="file" id="failiSisend" style="display:none" onchange="taastaAndmedFailist(event)">
+            <button onclick="kustutaAndmed()" style="background:#ef4444; color:white;">❌ Nulli pilv</button>
+        </div>
     </nav>
 
     <div id="page-registreerimine" class="page active">
@@ -252,7 +265,10 @@
     </div>
 
     <div id="page-kokkuvote" class="page">
-        <h2>Võistluse kokkuvõtted</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Võistluse kokkuvõtted</h2>
+            <button onclick="eksportExcelisse()" style="background:#16a34a; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🟢 Laadi edetabel Excelisse (CSV)</button>
+        </div>
         
         <h3>Individuaalne edetabel (kliki päisel sorteerimiseks)</h3>
         <table id="koondTabel">
@@ -325,7 +341,6 @@
         return '16+';
     }
 
-    // Pilve salvestamise keskne funktsioon
     function salvestaPilve() {
         if(window.set && window.db && window.ref) {
             window.set(window.ref(window.db, 'spordipaev'), {
@@ -334,6 +349,78 @@
                 jooksudeLimitid: window.jooksudeLimitid
             });
         }
+    }
+
+    // TURVAFUNKTSIOON 1: Laadi andmed alla JSON failina
+    function laadiAndmedAlla() {
+        const andmed = {
+            voistlejad: window.voistlejad,
+            tulemused: window.tulemused,
+            jooksudeLimitid: window.jooksudeLimitid
+        };
+        const andmeString = JSON.stringify(andmed, null, 2);
+        const blob = new Blob([andmeString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spordipaev_varukoopia_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // TURVAFUNKTSIOON 2: Taasta andmed üleslaetud JSON failist pilve
+    function taastaAndmedFailist(event) {
+        const fail = event.target.files[0];
+        if (!fail) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const import Andmed = JSON.parse(e.target.result);
+                if(importAndmed.voistlejad && importAndmed.tulemused) {
+                    window.voistlejad = importAndmed.voistlejad;
+                    window.tulemused = importAndmed.tulemused;
+                    window.jooksudeLimitid = importAndmed.jooksudeLimitid || { '60m': 20, '600m': 180, 'klotsijooks': 30 };
+                    salvestaPilve();
+                    alert("Andmed edukalt varufailist pilve taastatud!");
+                } else {
+                    alert("Viga: Valitud fail ei ole korrektne spordipäeva andmete fail.");
+                }
+            } catch (err) {
+                alert("Faili lugemisel tekkis viga. Kontrolli, et tegemist oleks õige failiga.");
+            }
+        };
+        reader.readAsText(fail);
+    }
+
+    // EXCELI EKSPORT (CSV formaat, mida Excel toetab)
+    function eksportExcelisse() {
+        const tabel = document.getElementById("koondTabel");
+        let csv = [];
+        const read = tabel.querySelectorAll("tr");
+        
+        for (let i = 0; i < read.length; i++) {
+            let rida = [];
+            const lahtrid = read[i].querySelectorAll("th, td");
+            for (let j = 0; j < lahtrid.length; j++) {
+                // Eemaldame reavahetused ja paneme tekstid jutumärkidesse, et komad tabelit sassi ei ajaks
+                rida.push('"' + lahtrid[j].innerText.replace(/"/g, '""') + '"');
+            }
+            csv.push(rida.join(";")); // Kasutame semikoolonit, mida Eesti Excel eelistab
+        }
+        
+        const csvString = "\uFEFF" + csv.join("\n"); // \uFEFF tagab, et täpitähed (Ä, Ö jne) oleks Excelis õiged
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spordipaev_edetabel_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     function lisaVõiMuudaVoistleja(e) {
@@ -357,7 +444,6 @@
             const uus = { id: Date.now().toString(), jrk: window.voistlejad.length + 1, nimi, voistkond, aasta, kat };
             window.voistlejad.push(uus);
         }
-        
         salvestaPilve();
     }
 
@@ -414,7 +500,7 @@
         navi.innerHTML = '';
         Object.keys(alad).forEach(alaKood => {
             const btn = document.createElement('button');
-            btn.innerText = `${alad[alaKood].etapp}: ${alaKood}`;
+            btn.innerText = `${alad[alaKood].etapp: alaKood}`;
             if(alaKood === aktiivneAla) btn.className = 'active';
             btn.onclick = () => { aktiivneAla = alaKood; uuendaAladNavi(); laeAlaSisestus(); };
             navi.appendChild(btn);
