@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spordipäevakute Haldussüsteem reaalajas v.0.1</title>
+    <title>Spordipäevakute Haldussüsteem reaalajas</title>
     <style>
         :root {
             --primary: #1e40af;
@@ -23,8 +23,9 @@
             padding: 20px;
         }
         .container {
-            max-width: 1300px;
+            max-width: 100%;
             margin: 0 auto;
+            padding: 0 10px;
         }
         nav {
             display: flex;
@@ -93,24 +94,36 @@
             cursor: pointer;
             font-weight: bold;
         }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            min-width: 1200px;
         }
         th, td {
             border: 1px solid var(--border);
-            padding: 10px;
+            padding: 6px 8px;
             text-align: left;
         }
         th {
             background-color: #f1f5f9;
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
         th:hover {
             background-color: #e2e8f0;
         }
+        .ala-veerg { background-color: #fcfcfc; font-size: 0.85rem; }
+        .etapp-veerg { background-color: #eff6ff; font-weight: 600; }
+        .kokku-veerg { background-color: #dcfce7; font-weight: bold; }
+        
         .sub-nav {
             display: flex;
             gap: 5px;
@@ -142,6 +155,13 @@
         }
         .btn-edit { background: var(--warning); color: white; }
         .btn-del { background: #ef4444; color: white; }
+        .kat-pealkiri {
+            background: #475569;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-top: 25px;
+        }
     </style>
 
     <script type="module">
@@ -150,7 +170,7 @@
 
         // ⚠️ ASENDA SEE OMA FIREBASE CONFIGURATSIOONIGA!
         const firebaseConfig = {
-            apiKey: "AIzaSyBcWNborBy2zrV-h4pI1Qco2_5F6XWnGDw",
+           apiKey: "AIzaSyBcWNborBy2zrV-h4pI1Qco2_5F6XWnGDw",
   		authDomain: "spordipaevak.firebaseapp.com",
   		databaseURL: "https://spordipaevak-default-rtdb.europe-west1.firebasedatabase.app",
   		projectId: "spordipaevak",
@@ -265,40 +285,25 @@
 
     <div id="page-kokkuvote" class="page">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <h2>Võistluse kokkuvõtted</h2>
-            <button onclick="eksportExcelisse()" style="background:#16a34a; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🟢 Laadi edetabel Excelisse (CSV)</button>
+            <h2>Võistluse kokkuvõtted ja detailne punktitabel</h2>
+            <button onclick="eksportExcelisseKõik()" style="background:#16a34a; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🟢 Laadi kõik edetabelid Excelisse (CSV)</button>
         </div>
         
-        <h3>Individuaalne edetabel (kliki päisel sorteerimiseks)</h3>
-        <table id="koondTabel">
-            <thead>
-                <tr>
-                    <th onclick="sorteeriTabel('koondTabel', 0, true)">Koht</th>
-                    <th onclick="sorteeriTabel('koondTabel', 1, true)">Jrk</th>
-                    <th onclick="sorteeriTabel('koondTabel', 2)">Nimi</th>
-                    <th onclick="sorteeriTabel('koondTabel', 3)">Võistkond</th>
-                    <th onclick="sorteeriTabel('koondTabel', 4)">Kat.</th>
-                    <th onclick="sorteeriTabel('koondTabel', 5, true)">I Etapp</th>
-                    <th onclick="sorteeriTabel('koondTabel', 6, true)">II Etapp</th>
-                    <th onclick="sorteeriTabel('koondTabel', 7, true)">III Etapp</th>
-                    <th onclick="sorteeriTabel('koondTabel', 8, true)">Finaal</th>
-                    <th onclick="sorteeriTabel('koondTabel', 9, true)">KOKKU</th>
-                </tr>
-            </thead>
-            <tbody id="koondTabelSisu"></tbody>
-        </table>
+        <div id="kategooriateTabelidKoht"></div>
 
-        <h3>Võistkondlik edetabel</h3>
-        <table id="voistkondTabel">
-            <thead>
-                <tr>
-                    <th onclick="sorteeriTabel('voistkondTabel', 0, true)">Koht</th>
-                    <th onclick="sorteeriTabel('voistkondTabel', 1)">Võistkond</th>
-                    <th onclick="sorteeriTabel('voistkondTabel', 2, true)">Kokku Punkte</th>
-                </tr>
-            </thead>
-            <tbody id="voistkondTabelSisu"></tbody>
-        </table>
+        <h3>Võistkondlik koondarvestus</h3>
+        <div class="table-container">
+            <table id="voistkondTabel">
+                <thead>
+                    <tr>
+                        <th onclick="sorteeriTabel('voistkondTabel', 0, true)">Koht</th>
+                        <th onclick="sorteeriTabel('voistkondTabel', 1)">Võistkond</th>
+                        <th onclick="sorteeriTabel('voistkondTabel', 2, true)">Kokku Punkte</th>
+                    </tr>
+                </thead>
+                <tbody id="voistkondTabelSisu"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -390,32 +395,6 @@
             }
         };
         reader.readAsText(fail);
-    }
-
-    function eksportExcelisse() {
-        const tabel = document.getElementById("koondTabel");
-        let csv = [];
-        const read = tabel.querySelectorAll("tr");
-        
-        for (let i = 0; i < read.length; i++) {
-            let rida = [];
-            const lahtrid = read[i].querySelectorAll("th, td");
-            for (let j = 0; j < lahtrid.length; j++) {
-                rida.push('"' + lahtrid[j].innerText.replace(/"/g, '""') + '"');
-            }
-            csv.push(rida.join(";"));
-        }
-        
-        const csvString = "\uFEFF" + csv.join("\n");
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `spordipaev_edetabel_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
     }
 
     function lisaVõiMuudaVoistleja(e) {
@@ -627,42 +606,96 @@
 
     function uuendaKokkuvotted() {
         const punktid = arvutaPunktidKõigile();
+        const kategooriad = ['U8', 'U16', '16+'];
+        const alaKoodid = Object.keys(alad);
         
-        let voistlejaKoond = window.voistlejad.map(v => {
+        const koht = document.getElementById('kategooriateTabelidKoht');
+        koht.innerHTML = '';
+
+        let globaalneKoond = window.voistlejad.map(v => {
+            let aladePunktid = {};
             let etapiSummad = { 'I Etapp': 0, 'II etapp': 0, 'III etapp': 0, 'Finaaletapp': 0 };
             let kokku = 0;
 
-            Object.keys(alad).forEach(alaKood => {
+            alaKoodid.forEach(alaKood => {
                 const p = punktid[v.id]?.[alaKood] || 0;
+                aladePunktid[alaKood] = p;
                 etapiSummad[alad[alaKood].etapp] += p;
                 kokku += p;
             });
 
-            return { ...v, etapiSummad, kokku };
+            return { ...v, aladePunktid, etapiSummad, kokku };
         });
 
-        voistlejaKoond.sort((a, b) => b.kokku - a.kokku);
+        kategooriad.forEach(kat => {
+            let katVoistlejad = globaalneKoond.filter(v => v.kat === kat);
+            katVoistlejad.sort((a, b) => b.kokku - a.kokku);
 
-        const koondSisu = document.getElementById('koondTabelSisu');
-        if(!koondSisu) return;
-        koondSisu.innerHTML = '';
-        voistlejaKoond.forEach((v, index) => {
-            koondSisu.innerHTML += `<tr>
-                <td>${index + 1}</td>
-                <td>${v.jrk}</td>
-                <td><strong>${v.nimi}</strong></td>
-                <td>${v.voistkond}</td>
-                <td>${v.kat}</td>
-                <td>${v.etapiSummad['I Etapp'].toFixed(1)}</td>
-                <td>${v.etapiSummad['II etapp'].toFixed(1)}</td>
-                <td>${v.etapiSummad['III etapp'].toFixed(1)}</td>
-                <td>${v.etapiSummad['Finaaletapp'].toFixed(1)}</td>
-                <td><strong>${v.kokku.toFixed(1)}</strong></td>
-            </tr>`;
+            const katKood = 'tabel-' + kat.replace('+', 'plus');
+            
+            let html = `
+                <h3 class="kat-pealkiri">Kategooria: ${kat}</h3>
+                <div class="table-container">
+                    <table id="${katKood}">
+                        <thead>
+                            <tr>
+                                <th onclick="sorteeriTabel('${katKood}', 0, true)">Koht</th>
+                                <th onclick="sorteeriTabel('${katKood}', 1, true)">Jrk</th>
+                                <th onclick="sorteeriTabel('${katKood}', 2)">Nimi</th>
+                                <th onclick="sorteeriTabel('${katKood}', 3)">Võistkond</th>
+            `;
+
+            // Genereerime alade päised
+            let index = 4;
+            alaKoodid.forEach(alaKood => {
+                html += `<th class="ala-veerg" onclick="sorteeriTabel('${katKood}', ${index}, true)">${alaKood}</th>`;
+                index++;
+            });
+
+            // Genereerime etapi päised
+            const etapiNimed = ['I Etapp', 'II etapp', 'III etapp', 'Finaaletapp'];
+            etapiNimed.forEach(etapp => {
+                html += `<th class="etapp-veerg" onclick="sorteeriTabel('${katKood}', ${index}, true)">${etapp}</th>`;
+                index++;
+            });
+
+            // Kokku päis
+            html += `<th class="kokku-veerg" onclick="sorteeriTabel('${katKood}', ${index}, true)">KOKKU</th></tr></thead><tbody>`;
+
+            if(katVoistlejad.length === 0) {
+                html += `<tr><td colspan="${5 + alaKoodid.length + 4}">Selles kategoorias pole veel võistlejaid.</td></tr>`;
+            } else {
+                katVoistlejad.forEach((v, kohaIndeks) => {
+                    html += `<tr>
+                        <td><strong>${kohaIndeks + 1}</strong></td>
+                        <td>${v.jrk}</td>
+                        <td><strong>${v.nimi}</strong></td>
+                        <td>${v.voistkond}</td>
+                    `;
+
+                    // Alade punktid
+                    alaKoodid.forEach(alaKood => {
+                        const p = v.aladePunktid[alaKood];
+                        html += `<td class="ala-veerg">${p > 0 ? p.toFixed(1) : '-'}</td>`;
+                    });
+
+                    // Etappide summad
+                    etapiNimed.forEach(etapp => {
+                        html += `<td class="etapp-veerg">${v.etapiSummad[etapp].toFixed(1)}</td>`;
+                    });
+
+                    // Lõppsumma
+                    html += `<td class="kokku-veerg">${v.kokku.toFixed(1)}</td></tr>`;
+                });
+            }
+
+            html += `</tbody></table></div>`;
+            koht.innerHTML += html;
         });
 
+        // VÕISTKONDLIK ARVESTUS
         let voistkonnad = {};
-        voistlejaKoond.forEach(v => {
+        globaalneKoond.forEach(v => {
             if(!voistkonnad[v.voistkond]) voistkonnad[v.voistkond] = 0;
             voistkonnad[v.voistkond] += v.kokku;
         });
@@ -696,6 +729,9 @@
         read.sort((a, b) => {
             let lahtriA = a.children[tulbaIndeks].innerText.trim();
             let lahtriB = b.children[tulbaIndeks].innerText.trim();
+            
+            if(lahtriA === '-' || lahtriA === '') lahtriA = '0';
+            if(lahtriB === '-' || lahtriB === '') lahtriB = '0';
 
             if (kasNumber) {
                 let arvA = parseFloat(lahtriA) || 0;
@@ -707,6 +743,57 @@
         });
 
         read.forEach(rida => tbody.appendChild(rida));
+    }
+
+    // EKSPORDI KÕIK TABELID KORRAGA ÜHTSESSE EXCELI FAILIDE RIDESSE
+    function eksportExcelisseKõik() {
+        let csv = [];
+        const kategooriad = ['U8', 'U16', '16plus'];
+        
+        kategooriad.forEach(kat => {
+            const tabeliId = 'tabel-' + kat;
+            const tabel = document.getElementById(tabeliId);
+            if(!tabel) return;
+
+            csv.push(`"KATEGOORIA: ${kat.replace('plus', '+')}"`);
+            
+            const read = tabel.querySelectorAll("tr");
+            for (let i = 0; i < read.length; i++) {
+                let rida = [];
+                const lahtrid = read[i].querySelectorAll("th, td");
+                for (let j = 0; j < lahtrid.length; j++) {
+                    rida.push('"' + lahtrid[j].innerText.replace(/"/g, '""') + '"');
+                }
+                csv.push(rida.join(";"));
+            }
+            csv.push(""); // Lisame tühja rea tabelite vahele stabiilsuse saavutamiseks
+        });
+
+        // Lisame lõppu ka võistkondliku tabeli
+        csv.push('"VÕISTKONDLIK EDETABEL"');
+        const vTabel = document.getElementById("voistkondTabel");
+        if(vTabel) {
+            const read = vTabel.querySelectorAll("tr");
+            for (let i = 0; i < read.length; i++) {
+                let rida = [];
+                const lahtrid = read[i].querySelectorAll("th, td");
+                for (let j = 0; j < lahtrid.length; j++) {
+                    rida.push('"' + lahtrid[j].innerText.replace(/"/g, '""') + '"');
+                }
+                csv.push(rida.join(";"));
+            }
+        }
+        
+        const csvString = "\uFEFF" + csv.join("\n");
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spordipaev_edetabelid_kõik_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     function kustutaAndmed() {
